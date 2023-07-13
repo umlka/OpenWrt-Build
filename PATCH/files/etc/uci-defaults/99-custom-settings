@@ -1,0 +1,33 @@
+#!/bin/sh
+
+#upnpd
+uci set upnpd.config.enabled='1'
+uci commit upnpd
+
+#dnsmasq
+uci set dhcp.lan.ra='hybrid'
+uci set dhcp.lan.ndp='hybrid'
+uci set dhcp.lan.dhcpv6='hybrid'
+uci set dhcp.lan.ra_management='1'
+uci -q del dhcp.@dnsmasq[0].filteraaaa
+uci set dhcp.@dnsmasq[0].rebind_protection='0'
+uci commit dhcp
+
+#firewall
+uci set firewall.@defaults[0].fullcone='1'
+uci set firewall.@defaults[0].fullcone6='1'
+uci commit firewall
+
+#network
+#uci -q del network.@device[0].ports
+#uci add_list network.@device[0].ports='eth1'
+#uci add_list network.@device[0].ports='eth2'
+#uci add_list network.@device[0].ports='eth3'
+#uci add_list network.@device[0].ports='eth4'
+#uci add_list network.@device[0].ports='eth5'
+#uci set network.wan.device='eth0'
+#uci set network.wan.proto='pppoe'
+#uci set network.wan6.device='eth0'
+#uci commit network
+
+exit 0

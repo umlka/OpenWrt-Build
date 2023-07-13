@@ -1,0 +1,60 @@
+#!/bin/sh
+
+#自动语言
+uci set luci.main.lang=auto
+uci commit luci
+
+#自动挂载
+uci set fstab.@global[0].anon_mount=1
+uci commit fstab
+
+#时区设置
+uci set system.@system[0].timezone=CST-8
+uci set system.@system[0].zonename=Asia/Shanghai
+uci -q del system.ntp.server
+uci add_list system.ntp.server='ntp.aliyun.com'
+uci add_list system.ntp.server='cn.ntp.org.cn'
+uci add_list system.ntp.server='ntp.ntsc.ac.cn'
+uci commit system
+
+#packet steering
+uci set network.globals.packet_steering='1'
+uci commit network
+
+#dropbear
+uci set dropbear.@dropbear[0].Interface='lan'
+uci commit dropbear
+
+#dnsmasq
+sed -i '/log-facility/d' /etc/dnsmasq.conf
+echo "log-facility=/dev/null" >> /etc/dnsmasq.conf
+
+#firewall
+uci set firewall.@defaults[0].flow_offloading='1'
+uci -q del firewall.@defaults[0].flow_offloading_hw
+uci commit firewall
+
+#uhttpd
+uci set uhttpd.main.rfc1918_filter=0
+uci set uhttpd.main.redirect_https=0
+uci set uhttpd.main.http_keepalive=0
+uci commit uhttpd
+/etc/init.d/uhttpd restart
+
+#镜像源
+sed -i 's,downloads.openwrt.org,mirror.sjtu.edu.cn/openwrt,g' /etc/opkg/distfeeds.conf
+
+#软链接
+[ ! -f '/usr/bin/ip' ] && [ -f '/sbin/ip' ] && ln -sf /sbin/ip /usr/bin/ip
+[ ! -f '/usr/bin/wget-ssl' ] && [ -f '/usr/bin/wget' ] && ln -sf /usr/bin/wget /usr/bin/wget-ssl
+
+#Flag packages
+opkg flag hold firewall
+opkg flag hold dnsmasq-full
+opkg flag hold luci-app-firewall
+
+#Flush LuCI cache
+rm -rf /tmp/luci-modulecache
+rm -f /tmp/luci-indexcache
+
+exit 0
